@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kerajaan Angka Raksasa</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Tailwind Config for Custom Theme -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Fredoka', 'sans-serif'],
+                    },
+                    colors: {
+                        'magic-light': '#a8c0ff',
+                        'magic-dark': '#3f2b96',
+                        'gold': '#ffd700',
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                        'bounce-in': 'bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 15px rgba(255,215,0,0.8))' },
+                            '50%': { opacity: .6, filter: 'drop-shadow(0 0 5px rgba(255,215,0,0.3))' },
+                        },
+                        bounceIn: {
+                            '0%': { transform: 'scale(0.3)', opacity: 0 },
+                            '50%': { transform: 'scale(1.05)' },
+                            '70%': { transform: 'scale(0.9)' },
+                            '100%': { transform: 'scale(1)', opacity: 1 }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #a8c0ff 0%, #ffafbd 100%);
+            background-attachment: fixed;
+            color: #333;
+            overflow-x: hidden;
+            transition: background 0.5s ease;
+        }
+
+        .dark body {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            background-attachment: fixed;
+            color: #f1f1f1;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        .dark .glass {
+            background: rgba(20, 20, 20, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Perbaikan Tombol 3D: Cukup di-translate Y tanpa mengubah ukuran border agar klik tidak meleset */
+        .btn-3d { transition: transform 0.1s; position: relative; }
+        .btn-3d:active:not(:disabled) {
+            transform: translateY(4px);
+        }
+        .btn-3d:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .map-line {
+            position: absolute;
+            width: 6px;
+            background: repeating-linear-gradient(to bottom, #fff, #fff 15px, transparent 15px, transparent 30px);
+            z-index: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .bg-number {
+            position: fixed;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+            font-size: 2rem;
+            z-index: -1;
+            user-select: none;
+            pointer-events: none;
+            animation: floatUp 10s linear infinite;
+        }
+        .dark .bg-number { color: rgba(255, 255, 255, 0.1); }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            right: 20px;
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: rgba(255, 255, 255, 0.9) transparent;
+            display: block;
+            width: 0;
+        }
+        .dark .speech-bubble:after { border-color: rgba(40, 40, 40, 0.9) transparent; }
+
+        .avatar-select.selected {
+            border-color: #4ade80 !important;
+            background-color: #dcfce7 !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
+        }
+        .dark .avatar-select.selected { background-color: #166534 !important; }
+        
+        /* Loading Overlay */
+        #loading-overlay { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col w-full overflow-x-hidden pb-40">
+
+    <!-- Global Background Particles -->
+    <div id="bg-particles" class="fixed inset-0 pointer-events-none z-[-1]"></div>
+
+    <!-- UI Overlay: Top Bar -->
+    <div id="top-bar" class="fixed top-0 left-0 w-full z-40 p-4 flex justify-between items-center pointer-events-none hidden">
+        <div class="pointer-events-auto flex gap-2">
+            <button onclick="toggleDarkMode()" class="glass w-12 h-12 rounded-full text-xl text-yellow-500 hover:scale-110 transition-transform btn-3d border-b-4 border-white/50 flex items-center justify-center">
+                <i id="theme-icon" class="fas fa-moon"></i>
+            </button>
+            <button onclick="toggleFullscreen()" class="glass w-12 h-12 rounded-full text-xl text-blue-500 hover:scale-110 transition-transform btn-3d border-b-4 border-white/50 hidden md:flex items-center justify-center">
+                <i id="fs-icon" class="fas fa-expand"></i>
+            </button>
+        </div>
+        <div class="glass px-4 py-2 rounded-2xl font-bold text-lg flex gap-4 pointer-events-auto">
+            <span class="text-orange-500" title="Koin Angka"><i class="fas fa-coins"></i> <span id="top-coins">0</span></span>
+            <span class="text-yellow-500" title="Bintang Prestasi"><i class="fas fa-star"></i> <span id="top-stars">0</span></span>
+        </div>
+    </div>
+
+    <!-- 1. SPLASH SCREEN -->
+    <div id="screen-splash" class="screen flex w-full flex-1 flex-col items-center justify-center p-4 min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-800 text-white z-50">
+        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent animate-pulse"></div>
+        <div class="text-8xl mb-6 animate-float relative">
+            👑
+            <div class="absolute -top-4 -right-4 text-4xl text-yellow-300 animate-spin-slow">✨</div>
+            <div class="absolute -bottom-2 -left-4 text-4xl text-yellow-300 animate-spin-slow" style="animation-direction: reverse;">⭐</div>
+        </div>
+        <h1 class="text-4xl md:text-6xl font-extrabold text-center mb-4 drop-shadow-[0_4px_4px_rgba(0,0,0,0.3)] animate-bounce-in">
+            Kerajaan Angka<br><span class="text-yellow-400">Raksasa</span>
+        </h1>
+        <p class="text-lg md:text-xl text-blue-200 mb-12 animate-pulse">Petualangan Bilangan Cacah Besar</p>
+        
+        <div class="w-64 h-4 bg-white/20 rounded-full overflow-hidden">
+            <div id="splash-bar" class="h-full bg-gradient-to-r from-yellow-300 to-yellow-500 w-0"></div>
+        </div>
+        <p class="mt-4 text-sm text-blue-200" id="splash-text">Menyiapkan Keajaiban...</p>
+    </div>
+
+    <!-- 2. ONBOARDING / PROFIL -->
+    <div id="screen-profile" class="screen hidden w-full flex-1 flex flex-col items-center justify-center p-4 min-h-screen">
+        <div class="glass p-6 md:p-10 rounded-3xl max-w-md w-full text-center relative animate-bounce-in">
+            <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-white w-24 h-24 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-4xl">
+                👤
+            </div>
+            <h2 class="text-3xl font-bold mt-10 mb-2">Buat Profilmu</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">Pilih avatar "Petualang Angka"</p>
+            
+            <div class="flex justify-center gap-6 mb-6">
+                <div class="avatar-select glass p-4 rounded-2xl cursor-pointer border-4 border-transparent transition-all" onclick="selectAvatar('boy', this)">
+                    <img src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix" alt="Boy" class="w-16 h-16 pointer-events-none">
+                    <p class="mt-2 font-bold pointer-events-none">Laki-laki</p>
+                </div>
+                <div class="avatar-select glass p-4 rounded-2xl cursor-pointer border-4 border-transparent transition-all" onclick="selectAvatar('girl', this)">
+                    <img src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=Aneka" alt="Girl" class="w-16 h-16 pointer-events-none">
+                    <p class="mt-2 font-bold pointer-events-none">Perempuan</p>
+                </div>
+            </div>
+
+            <input type="text" id="input-name" placeholder="Nama Panggilan" class="w-full p-4 rounded-xl mb-4 border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-center font-bold text-lg outline-none focus:border-blue-500">
+            
+            <select id="input-class" class="w-full p-4 rounded-xl mb-8 border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-center font-bold text-lg outline-none focus:border-blue-500">
+                <option value="">Pilih Kelas</option>
+                <option value="4A">Kelas 4A</option>
+                <option value="4B">Kelas 4B</option>
+                <option value="4C">Kelas 4C</option>
+                <option value="Other">Lainnya</option>
+            </select>
+
+            <button onclick="saveProfile()" class="btn-3d w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl text-xl font-bold border-b-6 border-purple-800 shadow-lg">
+                Mulai Petualangan <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. DASHBOARD (Mode Selection & Hub) -->
+    <div id="screen-dashboard" class="screen hidden w-full flex-1 flex flex-col items-center p-4 pt-24 min-h-screen">
+        <div class="glass p-6 rounded-3xl max-w-2xl w-full flex flex-col md:flex-row items-center gap-6 mb-8 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 text-9xl opacity-10 pointer-events-none">🛡️</div>
+            <img id="dash-avatar" src="" alt="Avatar" class="w-24 h-24 bg-white/50 rounded-full border-4 border-white shadow-md">
+            <div class="text-center md:text-left z-10">
+                <h2 class="text-3xl font-extrabold" id="dash-name">Halo, Petualang!</h2>
+                <p class="text-lg text-gray-700 dark:text-gray-300 font-medium">Petualang Angka • <span id="dash-class">Kelas 4</span></p>
+                
+                <button onclick="syncAccount()" class="mt-3 text-sm bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-3 py-1 rounded-full font-bold hover:bg-blue-200 transition flex items-center gap-2 btn-3d">
+                    <i class="fas fa-link"></i> Hubungkan ke Guru/Ortu
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+            <!-- Adventure Mode -->
+            <div class="glass p-6 rounded-3xl text-center transform transition hover:scale-105 border-t-4 border-green-400 group cursor-pointer" onclick="goToMap()">
+                <div class="text-6xl mb-4 group-hover:animate-bounce pointer-events-none">🗺️</div>
+                <h3 class="text-2xl font-bold mb-2 text-green-600 dark:text-green-400 pointer-events-none">Mode Petualangan</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-4 pointer-events-none">Ikuti alur cerita utama membantu Raja Numerio menemukan mahkota.</p>
+                <span class="inline-block bg-green-500 text-white px-6 py-2 rounded-xl font-bold btn-3d pointer-events-none">Mainkan</span>
+            </div>
+
+            <!-- Free Mode (Materi) -->
+            <div class="glass p-6 rounded-3xl text-center transform transition hover:scale-105 border-t-4 border-purple-400 group cursor-pointer" onclick="alert('Mode Bebas Terkunci! Selesaikan Mode Petualangan terlebih dahulu.')">
+                <div class="text-6xl mb-4 grayscale group-hover:grayscale-0 transition pointer-events-none">📚</div>
+                <h3 class="text-2xl font-bold mb-2 text-purple-600 dark:text-purple-400 pointer-events-none">Mode Bebas</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-4 pointer-events-none">Akses langsung ke materi dan latihan mini-games sesukamu.</p>
+                <span class="inline-block bg-gray-400 text-white px-6 py-2 rounded-xl font-bold pointer-events-none"><i class="fas fa-lock"></i> Terkunci</span>
+            </div>
+        </div>
+        
+        <button onclick="showResetModal()" class="mt-8 text-red-500 hover:text-red-700 font-bold underline">Reset Progress & Profil</button>
+    </div>
+
+    <!-- 4. PETA KERAJAAN (6 Wilayah) -->
+    <div id="screen-map" class="screen hidden w-full flex-1 flex flex-col items-center p-4 pt-24 min-h-screen">
+        <div class="flex justify-between items-center w-full max-w-md mb-8 relative z-20">
+            <button onclick="showScreen('dashboard')" class="glass p-3 rounded-xl font-bold btn-3d">
+                <i class="fas fa-arrow-left"></i> Hub
+            </button>
+            <h2 class="text-3xl font-extrabold glass px-6 py-2 rounded-full text-center shadow-md">Peta Kerajaan</h2>
+            <div class="w-12"></div> <!-- Spacer -->
+        </div>
+        
+        <div class="relative w-full max-w-md mx-auto flex flex-col-reverse items-center gap-12 pb-20">
+            <div class="map-line h-full top-10 bottom-10 pointer-events-none"></div>
+
+            <!-- 6 Nodes Generated via JS -->
+            <div id="map-nodes-container" class="w-full flex flex-col-reverse gap-12 relative z-10"></div>
+            
+        </div>
+    </div>
+
+    <!-- 5. STORY SCREEN -->
+    <div id="screen-story" class="screen hidden w-full flex-1 flex flex-col items-center justify-center p-4 min-h-screen bg-black/80 backdrop-blur-md z-50">
+        <div class="glass p-8 rounded-3xl max-w-2xl w-full relative animate-bounce-in bg-white/90 dark:bg-gray-800/90 border-4 border-yellow-500">
+            <div class="flex flex-col md:flex-row items-center gap-6">
+                <div class="w-32 h-32 bg-purple-500 rounded-full flex items-center justify-center text-7xl border-4 border-yellow-400 shrink-0 shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+                    🧙‍♂️
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-2">Raja Numerio</h3>
+                    <div id="story-text" class="text-lg md:text-xl leading-relaxed font-medium italic">
+                        <!-- Story injected here -->
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 flex justify-end">
+                <button onclick="proceedToLibrary()" class="btn-3d px-8 py-3 bg-blue-500 text-white rounded-xl font-bold border-b-4 border-blue-700 text-lg">
+                    Lanjut <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. LIBRARY SCREEN (Materi Bergambar) -->
+    <div id="screen-library" class="screen hidden w-full flex-1 flex flex-col items-center p-4 pt-24 min-h-screen">
+        <div class="glass max-w-3xl w-full p-6 md:p-8 rounded-3xl relative">
+            <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white w-24 h-24 flex items-center justify-center rounded-full border-4 border-white shadow-lg text-4xl">
+                📖
+            </div>
+            <h2 class="text-3xl md:text-4xl font-extrabold text-center mt-8 mb-2" id="lib-title">Judul Materi</h2>
+            
+            <div id="lib-content" class="text-lg md:text-xl space-y-4 mb-8 bg-white/60 dark:bg-black/30 p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-700 mt-6 font-medium leading-relaxed">
+                <!-- Content injected via JS -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button onclick="showScreen('map')" class="btn-3d flex-1 py-4 bg-gray-400 text-white rounded-xl font-bold border-b-4 border-gray-600 text-lg">
+                    Kembali ke Peta
+                </button>
+                <button onclick="startLevel()" class="btn-3d flex-1 py-4 bg-green-500 text-white rounded-xl font-bold border-b-4 border-green-700 flex items-center justify-center gap-2 text-xl shadow-[0_0_15px_rgba(74,222,128,0.5)]">
+                    <i class="fas fa-gamepad"></i> Mulai Tantangan!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. GAMEPLAY / MINI GAME SCREEN -->
+    <div id="screen-game" class="screen hidden w-full flex-1 flex flex-col items-center p-4 pt-20 min-h-screen">
+        <div class="max-w-3xl w-full mx-auto relative z-10">
+            <!-- HUD -->
+            <div class="flex justify-between items-center mb-6 glass p-4 rounded-2xl shadow-sm">
+                <div class="flex space-x-1 text-red-500 text-2xl" id="lives-container">
+                    <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
+                </div>
+                <div class="font-bold text-xl text-center flex-1 text-blue-700 dark:text-blue-300">
+                    <span id="game-region-name">Wilayah 1</span> | Misi <span id="hud-qnum">1</span>/<span id="hud-total">3</span>
+                </div>
+            </div>
+
+            <!-- Question Card Dynamic Container -->
+            <div id="minigame-container" class="glass p-6 md:p-8 rounded-3xl mb-8 text-center min-h-[300px] flex flex-col justify-center items-center relative overflow-hidden">
+                <!-- Injected mini-game UI -->
+            </div>
+
+            <!-- Hint & Pause -->
+            <div class="flex justify-between mt-4">
+                <button onclick="pauseGame()" class="btn-3d px-6 py-3 bg-gray-500 text-white rounded-xl border-b-4 border-gray-700 font-bold">
+                    <i class="fas fa-pause"></i> Pause
+                </button>
+                <button onclick="useHint()" id="btn-hint" class="btn-3d px-6 py-3 bg-purple-500 text-white rounded-xl border-b-4 border-purple-700 font-bold flex gap-2 items-center">
+                    <i class="fas fa-magic"></i> Bantuan (1)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERLAYS -->
+    <!-- Level Complete / Boss Defeated -->
+    <div id="overlay-result" class="fixed inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="glass p-8 rounded-3xl max-w-md w-full text-center relative animate-bounce-in bg-white/95 dark:bg-gray-800/95 border-4 border-yellow-500">
+            <div id="result-icon" class="text-7xl mb-4 animate-pulse-glow">🏆</div>
+            <h2 id="result-title" class="text-3xl font-extrabold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500">Misi Berhasil!</h2>
+            <p id="result-msg" class="mb-6 text-lg font-medium text-gray-600 dark:text-gray-300">Wilayah telah diamankan!</p>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/50 p-6 rounded-2xl mb-8 border-2 border-blue-200 dark:border-blue-700">
+                <div class="flex justify-center gap-8 mb-4">
+                    <div class="text-center">
+                        <div class="text-3xl text-orange-500"><i class="fas fa-coins"></i></div>
+                        <div class="font-bold text-xl mt-1">+<span id="res-coins">100</span></div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl text-yellow-500"><i class="fas fa-star"></i></div>
+                        <div class="font-bold text-xl mt-1">+<span id="res-stars">3</span></div>
+                    </div>
+                </div>
+                <div id="result-badge" class="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl hidden border border-yellow-300">
+                    <!-- Badge info -->
+                </div>
+            </div>
+
+            <button id="btn-result-action" onclick="finishLevelAction()" class="btn-3d w-full py-4 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-xl font-bold border-b-6 border-green-700 text-xl shadow-lg">
+                Kembali ke Peta
+            </button>
+        </div>
+    </div>
+
+    <!-- Pause / Game Over Overlay -->
+    <div id="overlay-msg" class="fixed inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="glass p-8 rounded-3xl max-w-sm w-full text-center bg-white/90 dark:bg-gray-800/90">
+            <div id="om-icon" class="text-6xl mb-4">⏸️</div>
+            <h2 id="om-title" class="text-3xl font-bold mb-6">Game Dihentikan</h2>
+            
+            <div id="om-actions" class="space-y-4">
+                <button id="btn-om-primary" class="btn-3d w-full py-3 bg-green-500 text-white rounded-xl font-bold border-b-4 border-green-700 text-lg">
+                    Lanjutkan
+                </button>
+                <button onclick="quitToMap()" class="btn-3d w-full py-3 bg-red-500 text-white rounded-xl font-bold border-b-4 border-red-700 text-lg">
+                    Keluar ke Peta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. SERTIFIKAT AKHIR -->
+    <div id="screen-certificate" class="screen hidden w-full flex-1 flex flex-col items-center justify-center p-4 min-h-screen relative overflow-hidden bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-gray-900 dark:to-gray-800">
+        <div class="glass p-3 border-[12px] border-double border-yellow-500 max-w-3xl w-full text-center relative bg-white dark:bg-gray-900 shadow-[0_0_50px_rgba(250,204,21,0.4)] z-10 animate-bounce-in">
+            <div class="border-2 border-yellow-300 p-8 md:p-12 relative overflow-hidden">
+                <div class="absolute inset-0 opacity-5 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHRleHQgeD0iMTAiIHk9IjI1IiBmb250LXNpemU9IjIwIiBmaWxsPSIjMDAwIj7inKk8L3RleHQ+PC9zdmc+')]"></div>
+                
+                <h1 class="text-4xl md:text-5xl font-extrabold text-yellow-600 dark:text-yellow-400 mb-2 uppercase tracking-widest font-serif drop-shadow-sm">Sertifikat Penghargaan</h1>
+                <p class="text-xl mb-6 text-gray-600 dark:text-gray-400">Diberikan Dengan Bangga Kepada:</p>
+                
+                <h2 id="cert-name" class="text-4xl md:text-6xl font-black border-b-4 border-gray-300 inline-block px-12 pb-2 mb-6 text-blue-700 dark:text-blue-400">Nama Pemain</h2>
+                <p class="text-lg font-bold text-gray-500 mb-8" id="cert-class">Kelas 4A</p>
+                
+                <p class="text-lg md:text-xl mb-6 font-medium leading-relaxed">Atas keberanian, kecerdasan, dan keberhasilannya menyelesaikan seluruh tantangan di 6 Wilayah Kerajaan Angka Raksasa, serta meraih gelar kehormatan:</p>
+                <h3 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 mb-8 animate-pulse-glow">"MASTER BILANGAN CACAH BESAR"</h3>
+                
+                <div class="flex justify-center gap-4 text-4xl mb-8 bg-yellow-50 dark:bg-gray-800 p-4 rounded-2xl mx-auto max-w-lg border border-yellow-200">
+                    <span title="Desa Ribuan">🏘️</span>
+                    <span title="Kota Puluhan Ribu">🏰</span>
+                    <span title="Gunung Ratusan Ribu">⛰️</span>
+                    <span title="Istana Jutaan">👑</span>
+                    <span title="Lembah Operasi">➕</span>
+                    <span title="Kota Komprehensif">🏆</span>
+                </div>
+                
+                <div class="flex justify-around items-center mt-8 pt-8 border-t-2 border-gray-200">
+                    <div class="text-center">
+                        <p class="font-bold text-gray-500 mb-1">Total Koin & Bintang</p>
+                        <p class="text-2xl font-bold"><span class="text-orange-500"><i class="fas fa-coins"></i> <span id="cert-coins">0</span></span> &nbsp; <span class="text-yellow-500"><i class="fas fa-star"></i> <span id="cert-stars">0</span></span></p>
+                    </div>
+                    <div class="text-center border-l-2 pl-8 border-gray-200">
+                        <p class="mb-2 italic">Tertanda,</p>
+                        <p class="font-serif text-3xl text-purple-600 font-bold signature">Raja Numerio</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button onclick="showScreen('dashboard')" class="btn-3d mt-8 px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xl shadow-lg relative z-20 flex items-center gap-3">
+            <i class="fas fa-home"></i> Kembali ke Markas
+        </button>
+    </div>
+
+    <!-- Mascot Bubble (Raja Numerio) -->
+    <div id="mascot-container" class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 hidden flex items-end">
+        <div id="mascot-speech" class="speech-bubble bg-white/95 dark:bg-gray-800/95 text-base p-4 rounded-2xl shadow-xl border-2 border-purple-300 dark:border-purple-600 mb-20 mr-[-40px] max-w-[250px] opacity-0 transition-opacity duration-300 pointer-events-none font-medium">
+            Halo!
+        </div>
+        <div class="relative animate-float cursor-pointer" onclick="mascotClick()">
+            <div class="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center border-4 border-yellow-400 shadow-[0_0_20px_rgba(168,85,247,0.8)] overflow-hidden">
+                <span class="text-5xl md:text-6xl mt-2">🧙‍♂️</span>
+            </div>
+            <div class="absolute -top-4 -right-2 text-2xl animate-pulse pointer-events-none">👑</div>
+        </div>
+    </div>
+
+    <!-- SCRIPT (Data & Logic) -->
+    <script>
+        /* ==================== 1. DATA KERAJAAN (6 WILAYAH) ==================== */
+        const gameData = [
+            {
+                id: 1, name: "Desa Ribuan", icon: "🏘️", typeDesc: "Membaca & Menulis",
+                badge: "Penjaga Ribuan",
+                story: "Selamat datang, Pahlawan! Mahkotaku terpecah. Pecahan pertama ada di Desa Ribuan. Warga desa lupa cara menulis angka 4 digit. Bantu mereka menyusun angka yang benar!",
+                materiTitle: "Bilangan Ribuan",
+                materiContent: `
+                    <p>Di wilayah ini, angka terdiri dari <strong>4 digit</strong>.</p>
+                    <ul class="list-disc pl-5 mt-2 space-y-2">
+                        <li><strong>1.000</strong> dibaca "Seribu"</li>
+                        <li><strong>4.500</strong> dibaca "Empat ribu lima ratus"</li>
+                        <li><strong>7.025</strong> dibaca "Tujuh ribu dua puluh lima"</li>
+                    </ul>
+                    <div class="bg-blue-100 dark:bg-blue-900 p-3 rounded-xl mt-4 border border-blue-300">
+                        💡 <strong>Tips:</strong> Perhatikan letak angka nol (0) ya!
+                    </div>`,
+                qType: "arrange", // Mini-game: Susun Angka
+                questions: [
+                    { q: "Susun angka menjadi: Empat ribu lima ratus enam puluh tujuh", ans: [4, 5, 6, 7], options: [7, 4, 6, 5] },
+                    { q: "Susun lambang bilangan dari: Delapan ribu dua belas", ans: [8, 0, 1, 2], options: [2, 8, 1, 0] },
+                    { q: "Susun angka: Tiga ribu sembilan ratus empat", ans: [3, 9, 0, 4], options: [0, 9, 4, 3] }
+                ]
+            },
+            {
+                id: 2, name: "Kota Puluhan Ribu", icon: "🏰", typeDesc: "Membandingkan",
+                badge: "Ksatria Angka",
+                story: "Hebat! Sekarang kita di Kota Puluhan Ribu. Gerbang kastil terkunci! Kamu harus membandingkan nilai dua bilangan (5 digit) untuk membuka jembatan.",
+                materiTitle: "Membandingkan Angka",
+                materiContent: `
+                    <p>Untuk membandingkan dua bilangan puluhan ribu, bandingkan dari <strong>angka paling kiri</strong>.</p>
+                    <div class="flex justify-around items-center mt-4 mb-4 text-2xl font-bold bg-white/50 p-4 rounded-xl">
+                        <span>4<span class="text-red-500">5</span>.000</span>
+                        <span class="text-3xl text-green-500">&gt;</span>
+                        <span>4<span class="text-blue-500">2</span>.000</span>
+                    </div>
+                    <p>Karena angka puluhan ribunya sama (4), kita lihat ribuannya: 5 lebih besar dari 2.</p>
+                    <p class="mt-2 text-center font-bold">Simbol: &nbsp; &gt; (Lebih besar) &nbsp;&nbsp; &lt; (Lebih kecil) &nbsp;&nbsp; = (Sama)</p>`,
+                qType: "compare", // Mini-game: Jembatan Perbandingan
+                questions: [
+                    { left: "45.670", right: "45.760", ans: "<" },
+                    { left: "89.000", right: "88.999", ans: ">" },
+                    { left: "12.500", right: "12.500", ans: "=" },
+                    { left: "30.005", right: "30.050", ans: "<" }
+                ]
+            },
+            {
+                id: 3, name: "Gunung Ratusan Ribu", icon: "⛰️", typeDesc: "Nilai Tempat",
+                badge: "Ahli Nilai Tempat",
+                story: "Jalan menanjak! Ini adalah wilayah 6 angka. Untuk mencapai puncak gunung, kamu harus tahu posisi (nilai tempat) dari setiap angka.",
+                materiTitle: "Nilai Tempat Ratusan Ribu",
+                materiContent: `
+                    <p>Ayo kita urai bilangan <strong>372.145</strong>:</p>
+                    <div class="grid grid-cols-2 gap-2 mt-4 text-sm font-bold">
+                        <div class="bg-red-100 dark:bg-red-900 p-2 rounded text-center">3 = Ratusan Ribu</div>
+                        <div class="bg-orange-100 dark:bg-orange-900 p-2 rounded text-center">7 = Puluhan Ribu</div>
+                        <div class="bg-yellow-100 dark:bg-yellow-900 p-2 rounded text-center">2 = Ribuan</div>
+                        <div class="bg-green-100 dark:bg-green-900 p-2 rounded text-center">1 = Ratusan</div>
+                        <div class="bg-blue-100 dark:bg-blue-900 p-2 rounded text-center">4 = Puluhan</div>
+                        <div class="bg-purple-100 dark:bg-purple-900 p-2 rounded text-center">5 = Satuan</div>
+                    </div>`,
+                qType: "mcq", // Mini-game: MCQ Panjat Tebing
+                questions: [
+                    { q: "Angka 7 pada bilangan 732.145 menempati nilai...", a: ["Puluhan ribu", "Ratusan", "Ratusan ribu", "Jutaan"], ans: 2 },
+                    { q: "Bentuk panjang: 300.000 + 40.000 + 5.000 + 100 = ...", a: ["345.100", "340.510", "304.510", "345.010"], ans: 0 },
+                    { q: "Jika aku 5 ratusan ribu, 0 puluhan ribu, 2 ribuan. Angka berapakah aku?", a: ["50.200", "502.000", "520.000", "5.020"], ans: 1 },
+                    { q: "Nilai tempat angka 0 pada 506.789 adalah...", a: ["Ratusan ribu", "Puluhan ribu", "Ribuan", "Ratusan"], ans: 1 }
+                ]
+            },
+            {
+                id: 4, name: "Istana Jutaan", icon: "👑", typeDesc: "Kode Bilangan Besar",
+                badge: "Bangsawan Jutaan",
+                story: "Kita sampai di Istana! Peti harta Numerio terkunci dengan kode PIN. Kamu harus menebak bilangan jutaan (7 angka) untuk membukanya.",
+                materiTitle: "Satu Juta",
+                materiContent: `
+                    <p>Bilangan jutaan memiliki <strong>7 angka</strong> (1 angka di depan, diikuti 6 angka di belakang).</p>
+                    <div class="text-center my-6">
+                        <span class="text-4xl font-black text-yellow-500 bg-white/50 p-4 rounded-2xl shadow-inner tracking-widest">1.000.000</span>
+                    </div>
+                    <p class="text-center font-bold">= Satu Juta</p>
+                    <p class="mt-4">Contoh lain: <strong>2.500.000</strong> dibaca Dua Juta Lima Ratus Ribu.</p>`,
+                qType: "keypad", // Mini-game: Brankas Peti
+                questions: [
+                    { q: "Masukkan angka: Dua juta tiga ratus ribu", ans: "2300000" },
+                    { q: "Masukkan angka: Satu juta lima ratus lima puluh ribu", ans: "1550000" },
+                    { q: "Ketik angkanya: Empat juta", ans: "4000000" }
+                ]
+            },
+            {
+                id: 5, name: "Lembah Operasi", icon: "➕", typeDesc: "Tambah & Kurang",
+                badge: "Mesin Hitung",
+                story: "Awas! Lembah ini dipenuhi kabut misterius. Satu-satunya cara melewatinya adalah menggunakan Mesin Hitung Ajaib untuk menjumlah dan mengurang.",
+                materiTitle: "Operasi Angka Besar",
+                materiContent: `
+                    <p>Menjumlahkan dan mengurangkan angka besar sama seperti angka kecil, cukup perhatikan posisi Ribu, Puluh Ribu, dan Jutanya!</p>
+                    <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-xl mt-4 font-mono text-lg space-y-2">
+                        <p class="border-b border-gray-300 pb-2">  1.500.000<br>+ &nbsp;500.000<br>-----------<br>  2.000.000</p>
+                        <p>  2.500.000<br>- 1.000.000<br>-----------<br>  1.500.000</p>
+                    </div>`,
+                qType: "input", // Mini-game: Ketik hasil
+                questions: [
+                    { q: "125.000 + 25.000 = ...", prefix: "", ans: "150000" },
+                    { q: "1.500.000 - 500.000 = ...", prefix: "", ans: "1000000" },
+                    { q: "800.000 + 200.000 = ...", prefix: "", ans: "1000000" }
+                ]
+            },
+            {
+                id: 6, name: "Kota Uji Komprehensif", icon: "🏆", typeDesc: "Ujian Akhir (Soal Cerita)",
+                badge: "Raja Bilangan",
+                story: "Ini dia! Tantangan terakhir sebelum mahkota seutuhnya kembali. Gunakan semua kemampuanmu untuk menyelesaikan masalah warga kerajaan!",
+                materiTitle: "Penerapan Matematika",
+                materiContent: `
+                    <p>Di dunia nyata, angka besar sering digunakan untuk menghitung:</p>
+                    <ul class="list-disc pl-5 mt-2 space-y-2">
+                        <li>Jumlah <strong>Penduduk</strong> sebuah kota</li>
+                        <li>Harga <strong>Barang</strong> (Mobil, Motor, Rumah)</li>
+                        <li>Jarak <strong>Antar Planet</strong> (Ratusan ribu kilometer)</li>
+                    </ul>
+                    <p class="mt-4 font-bold text-blue-600 dark:text-blue-400">Baca soal cerita dengan teliti, temukan angka kuncinya, lalu hitung!</p>`,
+                qType: "mcq", // Mini-game: MCQ Cerita
+                questions: [
+                    { q: "Penduduk kota X 1.200.000 jiwa, kota Y 800.000 jiwa. Berapa selisih penduduknya?", a: ["2.000.000", "400.000", "600.000", "300.000"], ans: 1 },
+                    { q: "Ayah membeli motor 15.500.000. Bayar uang muka 5.000.000. Sisa yang harus dibayar?", a: ["10.000.000", "10.500.000", "20.500.000", "11.500.000"], ans: 1 },
+                    { q: "Jarak bumi ke bulan sekitar 384.400 km. Angka 8 menempati posisi...", a: ["Ratusan ribu", "Puluhan ribu", "Ribuan", "Ratusan"], ans: 1 }
+                ]
+            }
+        ];
+
+        /* ==================== 2. STATE & AUDIO ==================== */
+        let state = {
+            profile: null,
+            unlockedLevel: 1,
+            coins: 0,
+            stars: 0,
+            isDark: false,
+            
+            currLvlObj: null,
+            currQIndex: 0,
+            lives: 3,
+            combo: 0,
+            hintsLeft: 1,
+            
+            tempArrangeSlots: [],
+            tempKeypadStr: ""
+        };
+
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        function playTone(freq, type, dur, vol=0.1) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        }
+
+        const sound = {
+            click: () => { initAudio(); playTone(600, 'sine', 0.1, 0.05); },
+            correct: () => { initAudio(); playTone(523.25, 'sine', 0.1); setTimeout(() => playTone(659.25, 'sine', 0.15), 100); setTimeout(() => playTone(783.99, 'sine', 0.2), 200); },
+            wrong: () => { initAudio(); playTone(300, 'sawtooth', 0.2); setTimeout(() => playTone(250, 'sawtooth', 0.3), 150); },
+            winLvl: () => { initAudio(); [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => setTimeout(() => playTone(f, 'square', 0.2), i*150)); },
+            lose: () => { initAudio(); [400, 350, 300, 200].forEach((f, i) => setTimeout(() => playTone(f, 'triangle', 0.3), i*200)); }
+        };
+
+        /* ==================== 3. INIT & CORE FLOW ==================== */
+        function init() {
+            createParticles();
+            loadStorage();
+            applyDarkMode();
+            
+            let progress = 0;
+            const bar = document.getElementById('splash-bar');
+            const txt = document.getElementById('splash-text');
+            const msgs = ["Memuat grafis...", "Menyiapkan soal...", "Membangun kerajaan..."];
+            
+            const intv = setInterval(() => {
+                progress += Math.floor(Math.random() * 20) + 10;
+                if(progress > 100) progress = 100;
+                bar.style.width = progress + '%';
+                if(progress < 100) txt.innerText = msgs[Math.floor(progress/35)] || msgs[2];
+                
+                if (progress === 100) {
+                    clearInterval(intv);
+                    setTimeout(() => {
+                        if(state.profile && state.profile.name) {
+                            showScreen('dashboard');
+                            speak("Selamat datang kembali, Pahlawan!");
+                        } else {
+                            showScreen('profile');
+                        }
+                    }, 500);
+                }
+            }, 300);
+        }
+
+        function loadStorage() {
+            const data = JSON.parse(localStorage.getItem('rajaAngka2024') || '{}');
+            if(data.profile) state.profile = data.profile;
+            state.unlockedLevel = data.unlockedLevel || 1;
+            state.coins = data.coins || 0;
+            state.stars = data.stars || 0;
+            state.isDark = !!data.isDark;
+            updateTopBar();
+        }
+
+        function saveStorage() {
+            localStorage.setItem('rajaAngka2024', JSON.stringify({
+                profile: state.profile,
+                unlockedLevel: state.unlockedLevel,
+                coins: state.coins,
+                stars: state.stars,
+                isDark: state.isDark
+            }));
+            updateTopBar();
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`screen-${id}`).classList.remove('hidden');
+            window.scrollTo(0,0);
+            
+            const topBar = document.getElementById('top-bar');
+            const mascot = document.getElementById('mascot-container');
+            
+            if (id === 'splash' || id === 'profile') {
+                topBar.classList.add('hidden');
+                mascot.classList.add('hidden');
+            } else {
+                topBar.classList.remove('hidden');
+                mascot.classList.remove('hidden');
+            }
+
+            if(id === 'dashboard') renderDashboard();
+            if(id === 'map') renderMap();
+            if(id === 'certificate') renderCertificate();
+        }
+
+        function toggleDarkMode() {
+            sound.click(); state.isDark = !state.isDark;
+            applyDarkMode(); saveStorage();
+        }
+        function applyDarkMode() {
+            const h = document.documentElement, i = document.getElementById('theme-icon');
+            if (state.isDark) { h.classList.add('dark'); i.className = 'fas fa-sun'; }
+            else { h.classList.remove('dark'); i.className = 'fas fa-moon'; }
+        }
+        function toggleFullscreen() {
+            sound.click(); const d = document.documentElement, i = document.getElementById('fs-icon');
+            if(!document.fullscreenElement) { d.requestFullscreen().catch(()=>{}); i.className = 'fas fa-compress'; }
+            else { document.exitFullscreen(); i.className = 'fas fa-expand'; }
+        }
+        function updateTopBar() {
+            document.getElementById('top-coins').innerText = state.coins;
+            document.getElementById('top-stars').innerText = state.stars;
+        }
+
+        /* ==================== 4. ONBOARDING & HUB ==================== */
+        let tempAvatar = 'boy';
+        function selectAvatar(type, el) {
+            sound.click();
+            tempAvatar = type;
+            document.querySelectorAll('.avatar-select').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        
+        function saveProfile() {
+            sound.click();
+            const name = document.getElementById('input-name').value.trim();
+            const cls = document.getElementById('input-class').value;
+            if(!name || !cls) return alert("Isi nama dan kelasmu dulu ya!");
+            
+            state.profile = { name, avatar: tempAvatar, class: cls, linked: false };
+            saveStorage();
+            showScreen('dashboard');
+            fireConfetti(1);
+            speak(`Siap bertualang, ${name}?`);
+        }
+
+        function renderDashboard() {
+            document.getElementById('dash-name').innerText = `Halo, ${state.profile.name}!`;
+            document.getElementById('dash-class').innerText = `Kelas ${state.profile.class}`;
+            document.getElementById('dash-avatar').src = state.profile.avatar === 'boy' 
+                ? 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix' 
+                : 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Aneka';
+        }
+
+        function syncAccount() {
+            sound.click();
+            if(state.profile.linked) return alert("Akun sudah terhubung dengan aman!");
+            const code = prompt("Masukkan Kode Kelas dari Guru (misal: GURU4A):");
+            if(code) {
+                state.profile.linked = true; saveStorage();
+                alert(`Berhasil terhubung dengan kelas via kode ${code}! Progress kamu sekarang dipantau Guru.`);
+                renderDashboard();
+            }
+        }
+
+        function showResetModal() {
+            sound.click();
+            if(confirm("YAKIN RESET SEMUA? Poin, Bintang, dan Profil akan hilang selamanya!")) {
+                localStorage.removeItem('rajaAngka2024');
+                location.reload();
+            }
+        }
+
+        function goToMap() { sound.click(); showScreen('map'); }
+
+        /* ==================== 5. PETA KERAJAAN ==================== */
+        function renderMap() {
+            const container = document.getElementById('map-nodes-container');
+            container.innerHTML = '';
+            
+            // Susun terbalik agar node Level 1 berada di posisi bawah secara visual (dengan flex-col-reverse)
+            gameData.forEach((data) => {
+                const isUnlocked = data.id <= state.unlockedLevel;
+                const isCurrent = data.id === state.unlockedLevel;
+                const isDone = data.id < state.unlockedLevel;
+                
+                const node = document.createElement('div');
+                node.className = `w-full flex justify-center group cursor-pointer relative z-10`;
+                
+                let innerHTML = `<div class="glass w-3/4 md:w-2/3 p-4 rounded-3xl text-center transform transition duration-300 ${isUnlocked ? 'group-hover:scale-105' : 'opacity-60 grayscale'} ${isCurrent ? 'border-4 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.6)] animate-pulse-glow' : (isDone ? 'border-2 border-green-400' : 'border-2 border-gray-400')}">`;
+                
+                if(!isUnlocked) {
+                    innerHTML += `<div class="absolute -top-4 -right-4 bg-gray-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-lg border-2 border-white pointer-events-none"><i class="fas fa-lock"></i></div>`;
+                }
+                
+                innerHTML += `<div class="text-5xl mb-2 pointer-events-none">${data.icon}</div>
+                              <h3 class="font-extrabold text-xl md:text-2xl pointer-events-none">${data.id}. ${data.name}</h3>
+                              <p class="text-sm font-medium opacity-80 pointer-events-none">${data.typeDesc}</p>`;
+                
+                if(isDone) innerHTML += `<div class="mt-3 text-green-600 dark:text-green-400 font-bold pointer-events-none"><i class="fas fa-check-circle"></i> Selesai</div>`;
+                
+                innerHTML += `</div>`;
+                node.innerHTML = innerHTML;
+                node.onclick = () => selectLevel(data.id);
+                container.appendChild(node);
+            });
+        }
+
+        function selectLevel(id) {
+            sound.click();
+            if (id > state.unlockedLevel) {
+                speak("Wilayah ini masih terkunci oleh kabut tebal!");
+                return;
+            }
+            state.currLvlObj = gameData.find(g => g.id === id);
+            document.getElementById('story-text').innerHTML = `"${state.currLvlObj.story}"`;
+            showScreen('story');
+            speak("Dengarkan ceritanya baik-baik.");
+        }
+
+        /* ==================== 6. STORY & LIBRARY ==================== */
+        function proceedToLibrary() {
+            sound.click();
+            document.getElementById('lib-title').innerText = state.currLvlObj.materiTitle;
+            document.getElementById('lib-content').innerHTML = state.currLvlObj.materiContent;
+            showScreen('library');
+        }
+
+        /* ==================== 7. MINI GAMES ENGINE ==================== */
+        function startLevel() {
+            sound.click(); initAudio();
+            state.currQIndex = 0; state.lives = 3; state.combo = 0; state.hintsLeft = 1;
+            document.getElementById('game-region-name').innerText = state.currLvlObj.name;
+            document.getElementById('hud-total').innerText = state.currLvlObj.questions.length;
+            showScreen('game');
+            updateHUD();
+            loadMinigame();
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-qnum').innerText = state.currQIndex + 1;
+            document.getElementById('lives-container').innerHTML = Array(3).fill(0).map((_, i) => 
+                `<i class="${i < state.lives ? 'fas' : 'far text-gray-400'} fa-heart transition-all"></i>`
+            ).join('');
+            document.getElementById('btn-hint').innerHTML = `<i class="fas fa-magic"></i> Bantuan (${state.hintsLeft})`;
+        }
+
+        function loadMinigame() {
+            if (state.currQIndex >= state.currLvlObj.questions.length) { winLevel(); return; }
+            
+            const qData = state.currLvlObj.questions[state.currQIndex];
+            const type = state.currLvlObj.qType;
+            const container = document.getElementById('minigame-container');
+            
+            container.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                container.innerHTML = `<h3 class="text-xl md:text-2xl font-bold mb-6 w-full pointer-events-none">${qData.q}</h3>`;
+                
+                if (type === 'arrange') renderArrangeGame(qData, container);
+                else if (type === 'compare') renderCompareGame(qData, container);
+                else if (type === 'mcq') renderMCQGame(qData, container);
+                else if (type === 'keypad') renderKeypadGame(qData, container);
+                else if (type === 'input') renderInputGame(qData, container);
+
+                container.classList.remove('opacity-0', 'scale-95');
+                updateHUD();
+            }, 300);
+        }
+
+        function checkAnswerGeneral(isCorrect, originElem) {
+            if (isCorrect) {
+                sound.correct();
+                state.combo++;
+                let earnedCoins = 10 + (state.combo * 5);
+                state.coins += earnedCoins;
+                showFloatText(`+${earnedCoins} Koin!`, originElem);
+                speak(["Tepat sekali!", "Kamu cerdas!", "Hebat!"].random());
+                setTimeout(() => { state.currQIndex++; loadMinigame(); }, 1200);
+            } else {
+                sound.wrong();
+                state.lives--; state.combo = 0;
+                document.getElementById('minigame-container').classList.add('animate-shake');
+                speak(["Ups, keliru!", "Coba ingat lagi materinya.", "Awas nyawamu berkurang!"].random());
+                setTimeout(() => {
+                    document.getElementById('minigame-container').classList.remove('animate-shake');
+                    if (state.lives <= 0) gameOver();
+                    else loadMinigame();
+                }, 1000);
+            }
+            updateTopBar(); updateHUD();
+        }
+
+        // --- Minigame Types --- //
+        
+        function renderArrangeGame(qData, container) {
+            state.tempArrangeSlots = [];
+            const ansArr = qData.ans;
+            const optArr = qData.options;
+            
+            const area = document.createElement('div');
+            area.className = "w-full flex flex-col items-center gap-6";
+            
+            const slotsDiv = document.createElement('div');
+            slotsDiv.className = "flex gap-2 p-4 bg-gray-200 dark:bg-gray-800 rounded-xl min-w-[200px] justify-center";
+            for(let i=0; i<ansArr.length; i++) {
+                slotsDiv.innerHTML += `<div id="slot-${i}" class="w-12 h-16 border-b-4 border-gray-400 flex items-center justify-center text-3xl font-bold bg-white dark:bg-gray-700 rounded-md">_</div>`;
+            }
+            
+            const btnsDiv = document.createElement('div');
+            btnsDiv.className = "flex gap-3 justify-center flex-wrap";
+            
+            optArr.forEach((num, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-16 h-16 bg-blue-500 text-white text-3xl font-bold rounded-xl btn-3d shadow-md border-b-4 border-blue-700";
+                btn.innerText = num;
+                btn.onclick = () => {
+                    sound.click();
+                    if(state.tempArrangeSlots.length < ansArr.length) {
+                        state.tempArrangeSlots.push(num);
+                        document.getElementById(`slot-${state.tempArrangeSlots.length-1}`).innerText = num;
+                        btn.style.visibility = 'hidden';
+                        
+                        if(state.tempArrangeSlots.length === ansArr.length) {
+                            const userAns = state.tempArrangeSlots.join('');
+                            const realAns = ansArr.join('');
+                            checkAnswerGeneral(userAns === realAns, slotsDiv);
+                        }
+                    }
+                };
+                btnsDiv.appendChild(btn);
+            });
+            
+            const resetBtn = document.createElement('button');
+            resetBtn.className = "mt-4 text-red-500 font-bold underline cursor-pointer";
+            resetBtn.innerText = "Ulangi Susunan";
+            resetBtn.onclick = () => { sound.click(); loadMinigame(); };
+
+            area.appendChild(slotsDiv); area.appendChild(btnsDiv); area.appendChild(resetBtn);
+            container.appendChild(area);
+        }
+
+        function renderCompareGame(qData, container) {
+            const area = document.createElement('div');
+            area.className = "flex flex-col items-center w-full";
+            
+            // Render text html aman menggunakan label text yg sudah escaped khusus di UI
+            const syms = [
+                { key: 'less', label: '&lt;' },
+                { key: 'equal', label: '=' },
+                { key: 'greater', label: '&gt;' }
+            ];
+            
+            area.innerHTML = `
+                <div class="flex items-center justify-between w-full max-w-sm mb-8 text-3xl font-black bg-white/50 p-6 rounded-2xl border border-gray-300 pointer-events-none">
+                    <span class="text-blue-600">${qData.left}</span>
+                    <span id="compare-gap" class="w-12 h-12 border-4 border-dashed border-gray-400 rounded-full flex items-center justify-center text-gray-500">?</span>
+                    <span class="text-red-600">${qData.right}</span>
+                </div>
+                <div class="flex gap-4">
+                    ${syms.map(s => `
+                        <button class="w-20 h-20 bg-gradient-to-b from-yellow-300 to-orange-400 text-4xl font-bold text-white rounded-2xl btn-3d border-b-4 border-orange-600 shadow-lg" onclick="handleCompare('${s.key}', this)">${s.label}</button>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(area);
+        }
+        window.handleCompare = function(key, btn) {
+            const map = { 'less': '<', 'equal': '=', 'greater': '>' };
+            const sym = map[key];
+            const gap = document.getElementById('compare-gap');
+            gap.innerHTML = key === 'less' ? '&lt;' : (key === 'greater' ? '&gt;' : '=');
+            gap.className = "text-4xl text-green-500 font-black";
+            const q = state.currLvlObj.questions[state.currQIndex];
+            checkAnswerGeneral(sym === q.ans, btn);
+        }
+
+        function renderMCQGame(qData, container) {
+            const grid = document.createElement('div');
+            grid.className = "grid grid-cols-1 md:grid-cols-2 gap-4 w-full";
+            
+            let options = qData.a.map((text, i) => ({text, isCorrect: i === qData.ans}));
+            options.sort(() => Math.random() - 0.5);
+
+            options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = `btn-3d w-full p-4 text-left font-bold text-lg bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-300 border-b-4 hover:bg-blue-50 dark:hover:bg-gray-700 mcq-btn`;
+                btn.innerHTML = `<span class="inline-block w-8 h-8 rounded-full bg-blue-100 text-blue-600 text-center leading-8 mr-2 pointer-events-none">${['A','B','C','D'][i]}</span> <span class="pointer-events-none">${opt.text}</span>`;
+                btn.dataset.correct = opt.isCorrect;
+                btn.onclick = () => {
+                    document.querySelectorAll('.mcq-btn').forEach(b => b.disabled = true);
+                    btn.classList.add(opt.isCorrect ? 'bg-green-100' : 'bg-red-100');
+                    checkAnswerGeneral(opt.isCorrect, btn);
+                };
+                grid.appendChild(btn);
+            });
+            container.appendChild(grid);
+        }
+
+        function renderKeypadGame(qData, container) {
+            state.tempKeypadStr = "";
+            const area = document.createElement('div');
+            area.className = "flex flex-col items-center w-full max-w-sm";
+            
+            area.innerHTML = `
+                <div class="w-full bg-gray-900 text-green-400 font-mono text-3xl p-4 rounded-xl mb-4 text-right tracking-[0.2em] h-16 shadow-inner flex items-center justify-end overflow-hidden pointer-events-none" id="keypad-disp">_</div>
+                <div class="grid grid-cols-3 gap-3 w-full">
+                    ${[1,2,3,4,5,6,7,8,9,'C',0,'OK'].map(k => `
+                        <button class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 text-2xl font-bold py-3 rounded-xl btn-3d ${k==='OK'?'bg-green-500 text-white hover:bg-green-600 border-b-4 border-green-700':(k==='C'?'bg-red-400 text-white hover:bg-red-500 border-b-4 border-red-600':'border-b-4 border-gray-400 dark:border-gray-900')}" onclick="handleKeypad('${k}', this)">${k}</button>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(area);
+        }
+        window.handleKeypad = function(val, btn) {
+            sound.click();
+            const disp = document.getElementById('keypad-disp');
+            if(val === 'C') state.tempKeypadStr = "";
+            else if(val === 'OK') {
+                const q = state.currLvlObj.questions[state.currQIndex];
+                checkAnswerGeneral(state.tempKeypadStr === q.ans, btn);
+            }
+            else {
+                if(state.tempKeypadStr.length < 8) state.tempKeypadStr += val;
+            }
+            disp.innerText = state.tempKeypadStr || '_';
+        }
+
+        function renderInputGame(qData, container) {
+            const area = document.createElement('div');
+            area.className = "flex flex-col items-center w-full";
+            area.innerHTML = `
+                <input type="number" id="math-input" class="w-full max-w-xs text-center text-4xl font-bold p-4 rounded-2xl border-4 border-blue-400 outline-none focus:border-green-400 mb-6 bg-white/80 dark:bg-gray-800" placeholder="Hasil...">
+                <button class="btn-3d px-12 py-4 bg-green-500 text-white text-2xl font-bold rounded-2xl border-b-6 border-green-700 w-full max-w-xs shadow-md" onclick="checkMathInput(this)">KIRIM</button>
+            `;
+            container.appendChild(area);
+            setTimeout(() => document.getElementById('math-input').focus(), 100);
+        }
+        window.checkMathInput = function(btn) {
+            const val = document.getElementById('math-input').value;
+            const q = state.currLvlObj.questions[state.currQIndex];
+            checkAnswerGeneral(val === q.ans, btn);
+        }
+
+        /* --- Tools inside Game --- */
+        Array.prototype.random = function () { return this[Math.floor(Math.random() * this.length)]; };
+        
+        function useHint() {
+            if (state.hintsLeft > 0) {
+                sound.click(); state.hintsLeft--; updateHUD();
+                speak("Aku bantu sedikitttt ya!");
+                const cont = document.getElementById('minigame-container');
+                cont.classList.add('ring-4', 'ring-purple-400', 'bg-purple-50');
+                setTimeout(()=> cont.classList.remove('ring-4', 'bg-purple-50'), 1500);
+            }
+        }
+
+        /* ==================== 8. RESULTS ==================== */
+        function gameOver() {
+            sound.lose();
+            document.getElementById('om-icon').innerText = '💔';
+            document.getElementById('om-title').innerText = 'Nyawa Habis!';
+            document.getElementById('btn-om-primary').innerText = 'Ulangi Wilayah';
+            document.getElementById('btn-om-primary').onclick = () => { document.getElementById('overlay-msg').classList.add('hidden'); startLevel(); };
+            document.getElementById('overlay-msg').classList.remove('hidden');
+        }
+
+        function winLevel() {
+            sound.winLvl(); fireConfetti(2);
+            
+            const lvlStars = state.lives;
+            state.stars += lvlStars;
+            
+            document.getElementById('res-coins').innerText = state.coins;
+            document.getElementById('res-stars').innerText = lvlStars;
+            
+            const badgeEl = document.getElementById('result-badge');
+            badgeEl.classList.remove('hidden');
+            badgeEl.innerHTML = `<p class="text-sm font-bold text-gray-600 mb-1">Badge Diperoleh:</p><p class="text-xl font-black text-yellow-600">${state.currLvlObj.icon} ${state.currLvlObj.badge}</p>`;
+
+            if (state.currLvlObj.id === state.unlockedLevel && state.currLvlObj.id < 6) {
+                state.unlockedLevel++;
+            }
+            saveStorage();
+            document.getElementById('overlay-result').classList.remove('hidden');
+        }
+
+        function finishLevelAction() {
+            sound.click();
+            document.getElementById('overlay-result').classList.add('hidden');
+            if (state.currLvlObj.id === 6 && state.unlockedLevel === 6) {
+                renderCertificate();
+                showScreen('certificate');
+                fireConfetti(4);
+            } else {
+                showScreen('map');
+            }
+        }
+
+        /* --- Pause --- */
+        function pauseGame() { sound.click(); 
+            document.getElementById('om-icon').innerText = '⏸️';
+            document.getElementById('om-title').innerText = 'Game Di-Pause';
+            document.getElementById('btn-om-primary').innerText = 'Lanjutkan';
+            document.getElementById('btn-om-primary').onclick = () => { sound.click(); document.getElementById('overlay-msg').classList.add('hidden'); };
+            document.getElementById('overlay-msg').classList.remove('hidden');
+        }
+        function quitToMap() { sound.click(); document.getElementById('overlay-msg').classList.add('hidden'); showScreen('map'); }
+
+        /* ==================== 9. CERTIFICATE & FX ==================== */
+        function renderCertificate() {
+            document.getElementById('cert-name').innerText = state.profile ? state.profile.name : "Pahlawan";
+            document.getElementById('cert-class').innerText = state.profile ? `Kelas ${state.profile.class}` : "";
+            document.getElementById('cert-coins').innerText = state.coins;
+            document.getElementById('cert-stars').innerText = state.stars;
+        }
+
+        function showFloatText(txt, parent) {
+            const el = document.createElement('div'); el.innerText = txt;
+            el.className = 'absolute font-black text-3xl text-orange-500 drop-shadow-md pointer-events-none z-50 transition-all duration-1000 ease-out';
+            const rect = parent.getBoundingClientRect();
+            el.style.left = `${rect.left + rect.width/2 - 20}px`; el.style.top = `${rect.top}px`;
+            document.body.appendChild(el);
+            requestAnimationFrame(() => { el.style.transform = 'translateY(-60px) scale(1.5)'; el.style.opacity = '0'; });
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function speak(text) {
+            const b = document.getElementById('mascot-speech');
+            b.innerText = text; b.classList.remove('opacity-0');
+            if(b.timeoutId) clearTimeout(b.timeoutId);
+            b.timeoutId = setTimeout(() => b.classList.add('opacity-0'), 3500);
+        }
+        function mascotClick() { sound.click(); speak("Semangat! Kamu pasti bisa menyelesaikan misi ini!"); 
+            const m = document.querySelector('#mascot-container .rounded-full');
+            m.classList.add('animate-shake'); setTimeout(()=>m.classList.remove('animate-shake'),500);
+        }
+
+        function createParticles() {
+            const c = document.getElementById('bg-particles'); const s = ['+', '-', '×', '÷', '=', '%', '1', '2', '3', '0', '>', '<'];
+            for(let i=0; i<20; i++) {
+                let el = document.createElement('div'); el.className = 'bg-number pointer-events-none'; el.innerText = s[Math.floor(Math.random()*s.length)];
+                el.style.left = `${Math.random()*100}vw`; el.style.animationDelay = `${Math.random()*10}s`; el.style.fontSize = `${Math.random()*3 + 1}rem`;
+                c.appendChild(el);
+            }
+        }
+
+        function fireConfetti(dur=1) {
+            if(typeof confetti==='function'){
+                const e = Date.now() + (dur*1000); const c = ['#ffd700', '#ffafbd', '#a8c0ff', '#4ade80'];
+                (function frame(){ confetti({particleCount:4,angle:60,spread:55,origin:{x:0},colors:c}); confetti({particleCount:4,angle:120,spread:55,origin:{x:1},colors:c}); if(Date.now() < e) requestAnimationFrame(frame); }());
+            }
+        }
+
+        // Go
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
